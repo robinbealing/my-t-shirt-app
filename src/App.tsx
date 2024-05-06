@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Popper from '@mui/material/Popper';
+import { ItemInCart } from './ItemInCart';
 import './App.css';
 
 const PRODUCT_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
@@ -34,9 +37,26 @@ function App() {
 
     //TODO: call product API for info: title, desc, price, size options
 
-  return (
+    //Popper logic from https://mui.com/material-ui/react-popper/
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+    };
+
+    const open = Boolean(anchorEl);
+    const id = open ? 'simple-popper' : undefined;
+
+    return (
     <div>
-      <div className="header">My Cart ( {cart.length} )</div>
+      <div className="header">
+        <span onClick={handleClick}>My Cart ( {cart.length} )</span>
+      </div>
+      <Popper id={id} open={open} anchorEl={anchorEl}>
+          <Box sx={{ border: 1, p: 1, bgcolor: 'background.paper', width: 250, marginRight: 5 }}>
+            <ItemInCart name={PRODUCT_NAME} price={PRODUCT_PRICE} size='S' quantity={1} />
+          </Box>
+      </Popper>
       <div className="body">
         <img src="classic-tee.jpg" alt="Model wearing Classic Tee"/>
         <div className="details">
