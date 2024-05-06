@@ -33,6 +33,7 @@
 
 .size {
     color: #888888;
+    padding-bottom: 10px;
 }
 
 .image {
@@ -42,5 +43,14 @@
 .addButton {
     width: 150px;
     height: 45px;
+    color: #222222;
+}
+
+.required {
+    color: #C90000;
+}
+
+.selectedSize {
+    font-weight: bold;
     color: #222222;
 }
