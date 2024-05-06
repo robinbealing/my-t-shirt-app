@@ -1,41 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Popper from '@mui/material/Popper';
 import { ItemInCart } from './ItemInCart';
+import { CartItem, Product, Size } from './types';
 import './App.css';
 
-const PRODUCT_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
-const PRODUCT_NAME = "Classic Tee";
-const PRODUCT_PRICE = "$75.00";
-
-const sizes = ["S", "M", "L"] as const;
-type Size = typeof sizes[number];
-
-type CartItem = {
-    name: string,
-    price: string,
-    size: Size
-}
-
 function App() {
-    const [cart, setCart] = useState<CartItem[]>([]); //Cart display will group items by size i.e quantity
-    const [selectedSize, setSelectedSize] = useState<Size | null>(null);
+    const [cart, setCart] = useState<CartItem[]>([]);
+    const [selectedSize, setSelectedSize] = useState<Size>();
     const [errorText, setErrorText] = useState<string>('');
+    const [product, setProduct] = useState<Product>();
+
+    useEffect(() => {
+        fetch("https://3sb655pz3a.execute-api.ap-southeast-2.amazonaws.com/live/product", {
+          method: "GET"
+        })
+          .then((response) => response.json())
+          .then((data: Product) => {
+            setProduct(data);
+          })
+          .catch((error) => console.log(error));
+    }, []);
 
     const addToCart = () => {
-        if (selectedSize === null) {
+        if (product == null) {
+            return;
+        }
+
+        if (selectedSize == null) {
             setErrorText("Please select a size");
         } else {
-            setCart(cart.concat([{
-                    name: PRODUCT_NAME,
-                    price: PRODUCT_PRICE,
-                    size: selectedSize
-                }]));
+            const matchingItems = cart.filter((item) => item.size === selectedSize && item.name === product.title);
+
+            if (matchingItems.length > 0) {
+                const otherItems = cart.filter((item) => !matchingItems.includes(item));
+
+                setCart(otherItems.concat([{
+                                    name: product.title,
+                                    price: product.price,
+                                    size: selectedSize,
+                                    quantity: matchingItems[0].quantity + 1
+                                }]));
+
+            } else {
+                setCart(cart.concat([{
+                                    name: product.title,
+                                    price: product.price,
+                                    size: selectedSize,
+                                    quantity: 1
+                                }]));
+            }
         }
     }
-
-    //TODO: call product API for info: title, desc, price, size options
 
     //Popper logic from https://mui.com/material-ui/react-popper/
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -50,26 +67,30 @@ function App() {
     return (
     <div>
       <div className="header">
-        <span onClick={handleClick}>My Cart ( {cart.length} )</span>
+        <span onClick={handleClick}>My Cart ( {cart.reduce((currentSum, b) => currentSum + b.quantity, 0)} )</span>
       </div>
       <Popper id={id} open={open} anchorEl={anchorEl}>
           <Box sx={{ border: 1, p: 1, bgcolor: 'background.paper', width: 250, marginRight: 5 }}>
-            <ItemInCart name={PRODUCT_NAME} price={PRODUCT_PRICE} size='S' quantity={1} />
+
+          {cart.map((item) =>
+                <ItemInCart key={`${item.name} ${item.size}`} name={item.name} price={item.price} size={item.size} quantity={item.quantity} />
+          )}
+
           </Box>
       </Popper>
       <div className="body">
         <img src="classic-tee.jpg" alt="Model wearing Classic Tee"/>
         <div className="details">
-            <div className="title">{PRODUCT_NAME}</div>
-            <div className="price">{PRODUCT_PRICE}</div>
-            <div className="description">{PRODUCT_TEXT}</div>
+            <div className="title">{product?.title}</div>
+            <div className="price">${product?.price.toFixed(2)}</div>
+            <div className="description">{product?.description}</div>
             <div>
                 <div className="size">SIZE<span className="required">*</span>
                 <span className="selectedSize"> {selectedSize ?? errorText}</span></div>
                 <div>
-                    {sizes.map((size) => (
+                    {product?.sizeOptions.map((sizeOption) => (
                         <Button
-                            sx={size === selectedSize
+                            sx={sizeOption.label === selectedSize
                             ? {
                                 color: '#222222',
                                 borderColor: '#222222',
@@ -79,10 +100,10 @@ function App() {
                                 borderColor: '#CCCCCC',
                                 marginRight: '5px'
                             }}
-                            key={size}
-                            onClick={() => setSelectedSize(size)}
+                            key={sizeOption.id}
+                            onClick={() => setSelectedSize(sizeOption.label)}
                             variant="outlined">
-                            {size}
+                            {sizeOption.label}
                         </Button>
                     ))}
                 </div>
